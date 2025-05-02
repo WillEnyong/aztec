@@ -82,31 +82,23 @@ echo ""
 
 read -p "▶️ L1 Execution Client (EL) RPC URL: " ETH_RPC
 read -p "▶️ L1 Consensus (CL) RPC URL: " CONS_RPC
-read -p "▶️ Blob Sink URL (press Enter if none): " BLOB_URL
-read -p "▶️ Validator Private Key: " VALIDATOR_PRIVATE_KEY
+read -p "▶️ Validator Private Key (0x...): " VALIDATOR_PRIVATE_KEY
+read -p "▶️ Sequencer Coinbase Address (0x...): " SEQUENCER_COINBASE
 
 echo "🌐 Fetching public IP..."
 PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
 echo "    → $PUBLIC_IP"
 
+# Create .env file
 cat > .env <<EOF
 ETHEREUM_HOSTS="$ETH_RPC"
 L1_CONSENSUS_HOST_URLS="$CONS_RPC"
 P2P_IP="$PUBLIC_IP"
 VALIDATOR_PRIVATE_KEY="$VALIDATOR_PRIVATE_KEY"
-DATA_DIRECTORY="/data"
-LOG_LEVEL="debug"
+SEQUENCER_COINBASE="$SEQUENCER_COINBASE"
 EOF
 
-if [ -n "$BLOB_URL" ]; then
-  echo "BLOB_SINK_URL=\"$BLOB_URL\"" >> .env
-fi
-
-BLOB_FLAG=""
-if [ -n "$BLOB_URL" ]; then
-  BLOB_FLAG="--sequencer.blobSinkUrl \$BLOB_SINK_URL"
-fi
-
+# Create docker-compose.yml file
 cat > docker-compose.yml <<EOF
 version: "$COMPOSE_FILE_VERSION"
 services:
@@ -118,11 +110,17 @@ services:
       - L1_CONSENSUS_HOST_URLS=\${L1_CONSENSUS_HOST_URLS}
       - P2P_IP=\${P2P_IP}
       - VALIDATOR_PRIVATE_KEY=\${VALIDATOR_PRIVATE_KEY}
-      - DATA_DIRECTORY=\${DATA_DIRECTORY}
-      - LOG_LEVEL=\${LOG_LEVEL}
-      - BLOB_SINK_URL=\${BLOB_SINK_URL:-}
+      - SEQUENCER_COINBASE=\${SEQUENCER_COINBASE}
     entrypoint: >
-      sh -c 'node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start --network alpha-testnet --node --archiver --sequencer $BLOB_FLAG'
+      sh -c 'node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start
+        --node --archiver --sequencer
+        --network alpha-testnet
+        --l1-rpc-urls "\$ETHEREUM_HOSTS"
+        --l1-consensus-host-urls "\$L1_CONSENSUS_HOST_URLS"
+        --sequencer.validatorPrivateKey "\$VALIDATOR_PRIVATE_KEY"
+        --sequencer.coinbase "\$SEQUENCER_COINBASE"
+        --p2p.p2pIp "\$P2P_IP"
+        --p2p.maxTxPoolSize 1000000000'
     volumes:
       - $(pwd)/data:/data
 EOF
