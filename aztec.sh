@@ -1,135 +1,108 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
 
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-RESET='\033[0m'
+# Fungsi untuk menampilkan logo
+show_logo() {
+echo -e "\e[34m░██╗░░░░░░░██╗██╗░░██╗████████╗███████╗░█████╗░██╗░░██╗\e[0m\n\
+\e[34m░██║░░██╗░░██║██║░░██║╚══██╔══╝██╔════╝██╔══██╗██║░░██║\e[0m\n\
+\e[34m░╚██╗████╗██╔╝███████║░░░██║░░░█████╗░░██║░░╚═╝███████║\e[0m\n\
+\e[37m░░████╔═████║░██╔══██║░░░██║░░░██╔══╝░░██║░░██╗██╔══██║\e[0m\n\
+\e[37m░░╚██╔╝░╚██╔╝░██║░░██║░░░██║░░░███████╗╚█████╔╝██║░░██║\e[0m\n\
+\e[37m░░░╚═╝░░░╚═╝░░╚═╝░░╚═╝░░░╚═╝░░░╚══════╝░╚════╝░╚═╝░░╚═╝\e[0m"
+}
 
-# Logo
-echo -e "\033[34m██     ██ ██ ███    ██ ███████ ███    ██ ██ ██████  \033[0m" 
-echo "██     ██ ██ ████   ██ ██      ████   ██ ██ ██   ██ "
-echo "██  █  ██ ██ ██ ██  ██ ███████ ██ ██  ██ ██ ██████  "
-echo "██ ███ ██ ██ ██  ██ ██      ██ ██  ██ ██ ██ ██      "
-echo " ███ ███  ██ ██   ████ ███████ ██   ████ ██ ██      "
-echo
-echo "Join our Telegram channel: https://t.me/winsnip"
-echo
+# Tampilkan logo di awal
+show_logo
 
-# Must be run as root
-if [ "$(id -u)" -ne 0 ]; then
-  echo "⚠️ This script must be run with root (or sudo) privileges."
-  exit 1
-fi
+# Cek dan install Docker jika belum ada
+if ! command -v docker &> /dev/null
+then
+    echo "🔧 Docker belum terinstall, memulai instalasi Docker..."
+    sudo apt-get update
+    sudo apt-get install -y ca-certificates curl
+    sudo install -m 0755 -d /etc/apt/keyrings
+    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
 
-# Check and install Docker + Compose if needed
-if command -v docker &> /dev/null && command -v docker-compose &> /dev/null; then
-  DOCKER_VERSION=$(docker --version | awk '{print $3}' | sed 's/,//')
-  COMPOSE_VERSION=$(docker-compose --version | awk '{print $3}' | sed 's/,//')
-  echo "✅ Already installed: Docker version $DOCKER_VERSION, Compose version $COMPOSE_VERSION"
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+      $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+      sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    echo "✅ Docker selesai diinstall."
 else
-  echo "🐋 Docker or Docker Compose not found. Installing..."
-  apt-get update
-  apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg-agent \
-    software-properties-common
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-  add-apt-repository \
-    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-    $(lsb_release -cs) stable"
-  apt-get update
-  apt-get install -y docker-ce docker-ce-cli containerd.io
-  curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" \
-    -o /usr/local/bin/docker-compose
-  chmod +x /usr/local/bin/docker-compose
+    echo "✅ Docker sudah terinstall, skip instalasi."
 fi
 
-# Determine docker-compose file version
-COMPOSE_FILE_VERSION=$(docker-compose version --short 2>/dev/null | awk -F. '{print $1"."$2}')
-COMPOSE_FILE_VERSION=${COMPOSE_FILE_VERSION:-"3"}
+# Tampilkan logo lagi
+show_logo
 
-# Node.js check/install
-if ! command -v node &> /dev/null; then
-  echo "🟢 Node.js not found. Installing the latest version..."
-  curl -fsSL https://deb.nodesource.com/setup_current.x | sudo -E bash -
-  apt-get install -y nodejs
+# Cek dan install Node.js 18 jika belum ada
+if ! node -v | grep -q "v18"
+then
+    echo "🔧 Node.js 18 belum terinstall, memulai instalasi Node.js 18..."
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    echo "✅ Node.js 18 selesai diinstall."
 else
-  echo "🟢 Node.js is already installed."
+    echo "✅ Node.js 18 sudah terinstall, skip instalasi."
 fi
 
-# Aztec CLI install
-echo "⚙️ Installing Aztec CLI and preparing alpha-testnet..."
-curl -sL https://install.aztec.network | bash
+# Tampilkan logo lagi
+show_logo
 
-export PATH="$HOME/.aztec/bin:$PATH"
+# Membuat folder data volume
+mkdir -p /root/aztec-node/data
 
-if ! command -v aztec-up &> /dev/null; then
-  echo "❌ Aztec CLI installation failed."
-  exit 1
-fi
+# Masuk ke folder /root
+cd /root
 
-aztec-up alpha-testnet
+# Membuat folder aztec-node
+mkdir -p aztec-node
 
-# User inputs
-echo -e "\n📋 Instructions for obtaining RPC URLs:"
-echo "  - L1 Execution Client (EL) RPC URL:"
-echo "    https://dashboard.alchemy.com/"
-echo "  - L1 Consensus (CL) RPC URL:"
-echo "    https://drpc.org/"
-echo ""
+# Pindah ke folder aztec-node
+cd aztec-node
 
-read -p "▶️ L1 Execution Client (EL) RPC URL: " ETH_RPC
-read -p "▶️ L1 Consensus (CL) RPC URL: " CONS_RPC
-read -p "▶️ Validator Private Key (0x...): " VALIDATOR_PRIVATE_KEY
-read -p "▶️ Sequencer Coinbase Address (0x...): " SEQUENCER_COINBASE
+# Minta input dari user
+show_logo
+read -p "Masukkan ETHEREUM_HOSTS: " ETHEREUM_HOSTS
+read -p "Masukkan L1_CONSENSUS_HOST_URLS: " L1_CONSENSUS_HOST_URLS
+read -p "Masukkan VALIDATOR_PRIVATE_KEY: " VALIDATOR_PRIVATE_KEY
+read -p "Masukkan P2P_IP: " P2P_IP
 
-echo "🌐 Fetching public IP..."
-PUBLIC_IP=$(curl -s ifconfig.me || echo "127.0.0.1")
-echo "    → $PUBLIC_IP"
-
-# Create .env file
+# Simpan ke file .env
 cat > .env <<EOF
-ETHEREUM_HOSTS="$ETH_RPC"
-L1_CONSENSUS_HOST_URLS="$CONS_RPC"
-P2P_IP="$PUBLIC_IP"
-VALIDATOR_PRIVATE_KEY="$VALIDATOR_PRIVATE_KEY"
-SEQUENCER_COINBASE="$SEQUENCER_COINBASE"
+ETHEREUM_HOSTS=$ETHEREUM_HOSTS
+L1_CONSENSUS_HOST_URLS=$L1_CONSENSUS_HOST_URLS
+VALIDATOR_PRIVATE_KEY=$VALIDATOR_PRIVATE_KEY
+P2P_IP=$P2P_IP
 EOF
 
-# Create docker-compose.yml file
+# Membuat file docker-compose.yml
 cat > docker-compose.yml <<EOF
-version: "$COMPOSE_FILE_VERSION"
+version: '3.8'
+
 services:
   node:
     image: aztecprotocol/aztec:0.85.0-alpha-testnet.5
-    network_mode: host
     environment:
-      - ETHEREUM_HOSTS=\${ETHEREUM_HOSTS}
-      - L1_CONSENSUS_HOST_URLS=\${L1_CONSENSUS_HOST_URLS}
-      - P2P_IP=\${P2P_IP}
-      - VALIDATOR_PRIVATE_KEY=\${VALIDATOR_PRIVATE_KEY}
-      - SEQUENCER_COINBASE=\${SEQUENCER_COINBASE}
+      ETHEREUM_HOSTS: \$ETHEREUM_HOSTS
+      L1_CONSENSUS_HOST_URLS: \$L1_CONSENSUS_HOST_URLS
+      DATA_DIRECTORY: /data
+      VALIDATOR_PRIVATE_KEY: \$VALIDATOR_PRIVATE_KEY
+      P2P_IP: \$P2P_IP
+      LOG_LEVEL: debug
     entrypoint: >
-      sh -c 'node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start
-        --node --archiver --sequencer
-        --network alpha-testnet
-        --l1-rpc-urls "\$ETHEREUM_HOSTS"
-        --l1-consensus-host-urls "\$L1_CONSENSUS_HOST_URLS"
-        --sequencer.validatorPrivateKey "\$VALIDATOR_PRIVATE_KEY"
-        --sequencer.coinbase "\$SEQUENCER_COINBASE"
-        --p2p.p2pIp "\$P2P_IP"
-        --p2p.maxTxPoolSize 1000000000'
+      sh -c 'node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start --network alpha-testnet start --node --archiver --sequencer'
+    ports:
+      - 8080:8080
     volumes:
-      - $(pwd)/data:/data
+      - /root/aztec-node/data:/data
+    env_file:
+      - .env
 EOF
 
-mkdir -p data
+# Menjalankan docker-compose
+docker compose up -d
 
-echo "🚀 Starting Aztec full node (docker-compose up -d)..."
-docker-compose up -d
-
-echo -e "\n✅ Installation and startup completed!"
-echo "   - Check logs: docker-compose logs -f"
-echo "   - Data directory: $(pwd)/data"
+echo "✅ Aztec node sedang berjalan di background dengan konfigurasi dari .env."
