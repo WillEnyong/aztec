@@ -10,7 +10,7 @@ echo -e "\e[34m░██╗░░░░░░░██╗██╗░░██�
 \e[37m░░░╚═╝░░░╚═╝░░╚═╝░░╚═╝░░░╚═╝░░░╚══════╝░╚════╝░╚═╝░░╚═╝\e[0m"
 }
 
-# Tampilkan logo di awal
+# Tampilkan logo hanya sekali di awal
 show_logo
 
 # Cek dan install Docker jika belum ada
@@ -34,9 +34,6 @@ else
     echo "✅ Docker sudah terinstall, skip instalasi."
 fi
 
-# Tampilkan logo lagi
-show_logo
-
 # Cek dan install Node.js 18 jika belum ada
 if ! node -v | grep -q "v18"
 then
@@ -47,9 +44,6 @@ then
 else
     echo "✅ Node.js 18 sudah terinstall, skip instalasi."
 fi
-
-# Tampilkan logo lagi
-show_logo
 
 # Install Aztec CLI
 echo "🔧 Memulai instalasi Aztec CLI..."
@@ -69,7 +63,6 @@ mkdir -p aztec-node
 cd aztec-node
 
 # Minta input dari user
-show_logo
 read -p "Masukkan ETHEREUM_HOSTS: " ETHEREUM_HOSTS
 read -p "Masukkan L1_CONSENSUS_HOST_URLS: " L1_CONSENSUS_HOST_URLS
 read -p "Masukkan VALIDATOR_PRIVATE_KEY: " VALIDATOR_PRIVATE_KEY
