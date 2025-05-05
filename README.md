@@ -17,7 +17,7 @@ U must entry L1 beacon, u can request on https://drpc.org/ and search Beacon cho
 ---
 ### Check logs
 ````
-aztec-node-node-1
+docker logs -f aztec-node-node-1
 ````
 #### To check block number
 ```
