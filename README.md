@@ -1,6 +1,7 @@
 ## How to Install
 #### 1. Allow action to process script
 ```
+git clone https://github.com/WillEnyong/aztec.git
 cd aztec
 chmod +x aztec.sh
 ```
