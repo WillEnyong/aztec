@@ -51,6 +51,11 @@ fi
 # Tampilkan logo lagi
 show_logo
 
+# Install Aztec CLI
+echo "🔧 Memulai instalasi Aztec CLI..."
+bash -i <(curl -s https://install.aztec.network)
+echo "✅ Aztec CLI selesai diinstall."
+
 # Membuat folder data volume
 mkdir -p /root/aztec-node/data
 
