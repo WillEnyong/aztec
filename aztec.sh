@@ -76,19 +76,23 @@ VALIDATOR_PRIVATE_KEY=$VALIDATOR_PRIVATE_KEY
 P2P_IP=$P2P_IP
 EOF
 
+# Update pkg and images version
+aztec-up alpha-testnet &&
+docker pull aztecprotocol/aztec:0.85.0-alpha-testnet.8
+
 # Membuat file docker-compose.yml
 cat > docker-compose.yml <<EOF
 version: '3.8'
 
 services:
   node:
-    image: aztecprotocol/aztec:alpha-testnet
+    image: aztecprotocol/aztec:0.85.0-alpha-testnet.8
     environment:
-      ETHEREUM_HOSTS: \$ETHEREUM_HOSTS
-      L1_CONSENSUS_HOST_URLS: \$L1_CONSENSUS_HOST_URLS
+      ETHEREUM_HOSTS: $ETHEREUM_HOSTS
+      L1_CONSENSUS_HOST_URLS: $L1_CONSENSUS_HOST_URLS
       DATA_DIRECTORY: /data
-      VALIDATOR_PRIVATE_KEY: \$VALIDATOR_PRIVATE_KEY
-      P2P_IP: \$P2P_IP
+      VALIDATOR_PRIVATE_KEY: $VALIDATOR_PRIVATE_KEY
+      P2P_IP: $P2P_IP
       LOG_LEVEL: debug
     entrypoint: >
       sh -c 'node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start --network alpha-testnet start --node --archiver --sequencer'
