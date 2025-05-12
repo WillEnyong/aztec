@@ -10,7 +10,7 @@ echo -e "\e[34m░██╗░░░░░░░██╗██╗░░██�
 \e[37m░░░╚═╝░░░╚═╝░░╚═╝░░╚═╝░░░╚═╝░░░╚══════╝░╚════╝░╚═╝░░╚═╝\e[0m"
 }
 
-# Tampilkan logo hanya sekali di awal
+# Tampilkan logo
 show_logo
 
 # Cek dan install Docker jika belum ada
@@ -53,14 +53,9 @@ echo "✅ Aztec CLI selesai diinstall."
 # Membuat folder data volume
 mkdir -p /root/aztec-node/data
 
-# Masuk ke folder /root
-cd /root
-
-# Membuat folder aztec-node
-mkdir -p aztec-node
-
-# Pindah ke folder aztec-node
-cd aztec-node
+# Masuk ke folder /root/aztec-node
+mkdir -p /root/aztec-node
+cd /root/aztec-node
 
 # Minta input dari user
 read -p "Masukkan ETHEREUM_HOSTS: " ETHEREUM_HOSTS
@@ -76,12 +71,12 @@ VALIDATOR_PRIVATE_KEY=$VALIDATOR_PRIVATE_KEY
 P2P_IP=$P2P_IP
 EOF
 
-# Update pkg and images version
+# Update image dan config Aztec
 aztec-up alpha-testnet &&
 docker pull aztecprotocol/aztec:0.85.0-alpha-testnet.8
 
-# Membuat file docker-compose.yml
-cat > docker-compose.yml <<EOF
+# Membuat file docker-compose.yml dengan placeholder variabel ENV
+cat > docker-compose.yml <<'EOF'
 version: '3.8'
 
 services:
@@ -107,4 +102,4 @@ EOF
 # Menjalankan docker-compose
 docker compose up -d
 
-echo "✅ Aztec node sedang berjalan di background dengan konfigurasi dari .env."
+echo "✅ Aztec node sedang berjalan di background dengan konfigurasi dari .env dan docker-compose.yml."
